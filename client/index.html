@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Chess</title>
+        <meta charset="UTF-8">
+        <style>
+            body {
+                margin:0;
+                padding: 0;
+            }
+            #board {
+                display: grid;
+                grid-template-columns: repeat(8, 1fr);
+                grid-template-rows: repeat(8, 1fr);
+                grid-auto-rows: 1fr ;
+                grid-auto-columns: 1fr;
+                height: min(100vh, 100vw);
+                width: min(100vh, 100vw);
+            }
+            .black {
+                background-color: green;
+            }
+            .white {
+                background-color: greenyellow;
+            }
+            img {
+                max-width: 100%;
+                max-height: 100%;
+                display: inherit;
+            }
+            .cases {
+                display: inline;
+            }
+        </style>
+    </head>
+
+    <body>
+        <!--<button id ="play" >play</button>-->
+        <div id = "board"></div>
+    </body>
+
+
+    <script>
+        var selected = null;
+        var select_bool = false;
+        var map = new Array(8);
+        let board_ph = document.getElementById("board");
+
+        for (var i = 0; i < map.length; i++) {
+            map[i] = new Array(8).fill(null);
+        }
+
+        function Pion(y,x, color) {
+            this.name = "Pion";
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            let obj = document.createElement("img");
+            this.obj_in_dom = obj;
+            if (color == "white") {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/wp.png';
+            }
+            else {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bp.png';
+            }
+            
+            this.getPossibility =  function (map) {
+
+            }
+            this.move_to = function (new_y, new_x) {
+                if (map[new_y - 1][new_x - 1] != null) {
+                    if (map[new_y - 1][new_x - 1].color == this.color) {
+                        return false;
+                    }
+                }
+                document.getElementById(this.y + "" + this.x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
+                this.y = new_y;
+                this.x = new_x;
+                return true;
+            }
+            document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
+        }
+        function Cavalier(y,x, color){
+            this.name = "Cavalier";
+            this.x = x;
+            this.y = y;
+            this.color = color
+            let obj = document.createElement("img");
+            if (color == "white") {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/wn.png';
+            }
+            else {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bn.png';
+            }
+            this.obj_in_dom = obj;
+            
+            this.getPossibility = function (map) {
+                var possibility = new Array();
+                if(map[this.y + 1][this.x-2] != null ) {
+                    possibility.push([this.x + 1, this.y - 2]);
+                }
+                if(map[this.y + 1][this.x+2] != null) {
+                    possibility.push([this.x + 1, this.y + 2]);
+                }
+                if(map[this.y - 1][this.x-2] != null) {
+                    possibility.push([this.x + 1, this.y - 2]);
+                }
+                if(map[this.y - 1][this.x+2] != null) {
+                    possibility.push([this.x + 1, this.y - 2]);
+                }
+                if(map[this.y + 2][this.x-1] != null) {
+                    possibility.push([this.x + 1, this.y - 2]);
+                }
+                if(map[this.y + 2][this.x+1] != null) {
+                    possibility.push([this.x + 1, this.y - 2]);
+                }
+                if(map[this.y - 2][this.x-1] != null) {
+                    possibility.push([this.x + 1, this.y - 2]);
+                }
+                if(map[this.y - 2][this.x+1] != null) {
+                    possibility.push([this.x + 1, this.y - 2]);
+                }
+                return possibility;
+            }
+            this.move_to = function (new_y, new_x) {
+                if (map[new_y - 1][new_x - 1] != null) {
+                    if (map[new_y - 1][new_x - 1].color == this.color) {
+                        return false;
+                    }
+                }
+                document.getElementById(this.y + "" + this.x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
+                this.y = new_y;
+                this.x = new_x;
+                return true;
+            }
+            document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
+        }
+        function Fou(y,x,color) {
+            this.name = "Fou";
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            let obj = document.createElement("img");
+            if (color == "white") {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/wb.png';
+            }
+            else {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bb.png';
+            }
+            this.obj_in_dom = obj;
+            this.getPossibility = function (map) {
+
+            }
+            this.move_to = function (new_y, new_x) {
+                if (map[new_y - 1][new_x - 1] != null) {
+                    if (map[new_y - 1][new_x - 1].color == this.color) {
+                        return false;
+                    }
+                }
+                document.getElementById(this.y + "" + this.x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
+                this.y = new_y;
+                this.x = new_x;
+                return true;
+            }
+            document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
+        }
+        function Tour(y,x, color) {
+            this.name = "Tour";
+            this.x = x;
+            this.y = y;
+            let obj = document.createElement("img");
+            if(color == "white") {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/wr.png';
+            }
+            else {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/br.png';
+            }
+            this.obj_in_dom = obj;
+            this.getPossibility = function (map) {
+
+            }
+            this.move_to = function (new_y, new_x) {
+                if (map[new_y - 1][new_x - 1] != null) {
+                    if (map[new_y - 1][new_x - 1].color == this.color) {
+                        return false;
+                    }
+                }
+                document.getElementById(this.y + "" + this.x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
+                this.y = new_y;
+                this.x = new_x;
+                return true;
+            }
+            document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
+        }
+        function Queen(y,x, color) {
+            this.name = "Queen";
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            let obj = document.createElement("img");
+            if (color == "white") {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/wq.png';
+            }
+            else {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bq.png';
+            }
+            this.obj_in_dom = obj;
+            this.getPossibility = function (map) {
+
+            }
+            this.move_to = function (new_y, new_x) {
+                if (map[new_y - 1][new_x - 1] != null) {
+                    if (map[new_y - 1][new_x - 1].color == this.color) {
+                        return false;
+                    }
+                }
+                document.getElementById(this.y + "" + this.x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).innerHTML="";
+                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
+                this.y = new_y;
+                this.x = new_x;
+                return true;
+            }
+            document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
+        }
+        function King(y,x, color) {
+            this.name = "king";
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            let obj = document.createElement("img");
+            if (color == "white") {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/wk.png';
+            }
+            else {
+                obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bk.png';
+            }
+            this.obj_in_dom = obj;
+            this.getPossibility = function (map) {
+
+            }
+            this.move_to = function (new_y, new_x) {
+                if (map[new_y - 1][new_x - 1] != null) {
+                    if (map[new_y - 1][new_x - 1].color == this.color) {
+                        return false;
+                    }
+                }
+                document.getElementById(this.y + "" + this.x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).innerHTML = "";
+                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
+                this.y = new_y;
+                this.x = new_x;
+                return true;
+            }
+            document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
+        }
+        function build_board() {
+            let board = document.getElementById("board");
+            
+            for(let i = 0; i < 64; i++) {
+                let block = document.createElement("span");
+                let color = ((parseInt(i / 8) + 1)%2)?((i%2) ?"black":"white"): ((i % 2) ? "white" : "black"); 
+                
+                block.className = "Cases "+color + " "+String.fromCharCode(97+(i/8)) + ((i%8)+1);
+                block.id = ""+parseInt((i/8)+1)+""+parseInt((i%8)+1);
+                block.innerHTML="";
+                block.style.gridColumn = ""+((i%8)+1)+" / "+ ((i % 8) + 2);
+                block.style.gridRow = ""+parseInt((i/8)+1)+" / "+ ((i / 8) + 2);
+                board.appendChild(block);
+            }
+            fill_board();
+        }
+        function fill_board() {
+            
+            map[0][0] = new Tour(1,1,"white");
+            map[0][7] = new Tour(1,8,"white");
+            map[7][0] = new Tour(8,1,"black");
+            map[7][7] = new Tour(8,8,"black");
+            
+            map[0][1] = new Cavalier(1,2, "white" );
+            map[0][6] = new Cavalier(1,7, "white" );
+            map[7][1] = new Cavalier(8,2, "black" );
+            map[7][6] = new Cavalier(8,7, "black" );
+            map[0][2] = new Fou(1,3, "white" );
+            map[0][5] = new Fou(1,6, "white" );
+            map[7][2] = new Fou(8,3, "black" );
+            map[7][5] = new Fou(8,6, "black" );
+            for(let k = 0; k < 8; k++) {
+                map[1][k] = new Pion(2,k+1, "white");
+            }
+            for(let k = 0; k < 8; k++) {
+                map[6][k] = new Pion(7,k+1, "black");
+            }
+            map[0][4] = new Queen(1, 5, "white");
+            map[7][4] = new Queen(8, 5, "black");
+            map[0][3] = new King(1, 4, "white");
+            map[7][3] = new King(8, 4, "black");
+        }
+        build_board();
+
+        document.getElementById("board").addEventListener("click", (event) => {
+            let y = parseInt(event.clientY / (board_ph.offsetHeight /8))+1;
+            let x = parseInt(event.clientX / (board_ph.offsetWidth / 8)) + 1;
+
+            console.log(y + " "+x);
+            if(select_bool == true) {
+                console.log(selected.name);
+                let old_x = selected.x;
+                let old_y = selected.y;
+                if(selected.move_to(y,x) == true)  {
+                    
+                    map[selected.y - 1][selected.x - 1] = selected;
+                    map[old_y - 1][old_x - 1] = null;
+                    select_bool = false;
+                    
+                }
+            }
+            else {
+                if(map[y - 1][x - 1] != null) {
+                    selected = map[y - 1][x - 1];
+                    select_bool = true;
+                    console.log(selected.name);
+                }
+            }
+        });
+    </script>
+</html>

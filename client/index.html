@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
     <head>
         <title>Chess</title>
         <meta charset="UTF-8">
@@ -65,8 +64,10 @@
                 obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bp.png';
             }
             
-            this.getPossibility =  function (map) {
-
+            this.getPossibility =  function () {
+                let possibility = new Array();
+                
+                return possibility;
             }
             this.move_to = function (new_y, new_x) {
                 if (map[new_y - 1][new_x - 1] != null) {
@@ -99,13 +100,13 @@
             
             this.getPossibility = function (map) {
                 var possibility = new Array();
-                if(map[this.y + 1][this.x-2] != null ) {
-                    possibility.push([this.x + 1, this.y - 2]);
+                if(map[this.y + 1][this.x-2] != null && map[this.y + 1][this.x - 2].color != this.color) {
+                    possibility.push([this.y + 1, this.x - 2]);
                 }
-                if(map[this.y + 1][this.x+2] != null) {
-                    possibility.push([this.x + 1, this.y + 2]);
+                if(map[this.y + 1][this.x+2] != null && map[this.y + 1][this.x + 2].color != this.color) {
+                    possibility.push([this.y + 1, this.x + 2]);
                 }
-                if(map[this.y - 1][this.x-2] != null) {
+                if(map[this.y - 1][this.x-2] != null && map[this.y - 1][this.x - 2]) {
                     possibility.push([this.x + 1, this.y - 2]);
                 }
                 if(map[this.y - 1][this.x+2] != null) {
@@ -184,7 +185,7 @@
             }
             this.obj_in_dom = obj;
             this.getPossibility = function (map) {
-
+                
             }
             this.move_to = function (new_y, new_x) {
                 if (map[new_y - 1][new_x - 1] != null) {
@@ -214,8 +215,20 @@
                 obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bq.png';
             }
             this.obj_in_dom = obj;
-            this.getPossibility = function (map) {
-
+            this.getPossibility = function () {
+                let possibility = new Array();
+                let yi = this.y-1;
+                let xi = this.x;
+                while(yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi-1][xi-1] == null ) || (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color))) {
+                    possibility.push([yi,xi]);
+                    console.log(yi+" "+xi);
+                    yi--;
+                    console.log(yi+" "+xi);
+                    if (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color) {
+                        break;
+                    }
+                }
+                return possibility;
             }
             this.move_to = function (new_y, new_x) {
                 if (map[new_y - 1][new_x - 1] != null) {
@@ -245,8 +258,9 @@
                 obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bk.png';
             }
             this.obj_in_dom = obj;
-            this.getPossibility = function (map) {
-
+            this.getPossibility = function () {
+                let possibility = new Array();
+                return possibility;
             }
             this.move_to = function (new_y, new_x) {
                 if (map[new_y - 1][new_x - 1] != null) {
@@ -310,7 +324,12 @@
         document.getElementById("board").addEventListener("click", (event) => {
             let y = parseInt(event.clientY / (board_ph.offsetHeight /8))+1;
             let x = parseInt(event.clientX / (board_ph.offsetWidth / 8)) + 1;
-
+            if( selected != null && selected.x == x && selected.y == y && select_bool == true) {
+                select_bool = false;
+                document.getElementById("" + y + "" + x).style.opacity = "1";
+                
+                return;
+            }
             console.log(y + " "+x);
             if(select_bool == true) {
                 console.log(selected.name);
@@ -318,19 +337,25 @@
                 let old_y = selected.y;
                 if(selected.move_to(y,x) == true)  {
                     
+                    document.getElementById("" + old_y + "" + old_x).style.opacity = "1";
                     map[selected.y - 1][selected.x - 1] = selected;
                     map[old_y - 1][old_x - 1] = null;
                     select_bool = false;
-                    
                 }
             }
             else {
                 if(map[y - 1][x - 1] != null) {
                     selected = map[y - 1][x - 1];
                     select_bool = true;
+                    document.getElementById(""+y+""+x).style.opacity = "0.9";
                     console.log(selected.name);
+                    let possi = selected.getPossibility();
+                    possi.forEach(one => {
+                        document.getElementById(""+one[0]+""+one[1]).style.backgroundColor = "blue";
+                    });
                 }
             }
         });
+
     </script>
 </html>

@@ -31,29 +31,35 @@
             .cases {
                 display: inline;
             }
+            .blue {
+                background-color: wheat;
+            }
         </style>
     </head>
 
     <body>
-        <!--<button id ="play" >play</button>-->
         <div id = "board"></div>
     </body>
-
 
     <script>
         var selected = null;
         var select_bool = false;
         var map = new Array(8);
         let board_ph = document.getElementById("board");
-
+        var white = new Array();
+        var black = new Array();
+        var white_capture = new Array();
+        var black_capture = new Array();
+        var king_black = null;
+        var king_white = null;
         for (var i = 0; i < map.length; i++) {
             map[i] = new Array(8).fill(null);
         }
-
         function Pion(y,x, color) {
             this.name = "Pion";
             this.x = x;
             this.y = y;
+            this.firstStep = false;
             this.color = color;
             let obj = document.createElement("img");
             this.obj_in_dom = obj;
@@ -66,21 +72,37 @@
             
             this.getPossibility =  function () {
                 let possibility = new Array();
-                
-                return possibility;
-            }
-            this.move_to = function (new_y, new_x) {
-                if (map[new_y - 1][new_x - 1] != null) {
-                    if (map[new_y - 1][new_x - 1].color == this.color) {
-                        return false;
+
+                if(this.color == "black") {
+                    if (map[this.y - 2][this.x - 1] == null ) {
+                        possibility.push([this.y - 1, this.x ]);
+                    }
+                    if (map[this.y - 3][this.x - 1] == null && !this.firstStep) {
+                        possibility.push([this.y - 2, this.x ]);
+                    }
+                    if (map[this.y - 2][this.x - 2] != null && this.color != map[this.y - 2][this.x - 2]) {
+                        possibility.push([this.y - 1, this.x-1]);
+                    }
+                    if (map[this.y - 2][this.x ] != null && this.color != map[this.y - 2][this.x]) {
+                        possibility.push([this.y - 1, this.x+1]);
                     }
                 }
-                document.getElementById(this.y + "" + this.x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
-                this.y = new_y;
-                this.x = new_x;
-                return true;
+                else if (this.color == "white") {
+                    if (map[this.y ][this.x - 1] == null) {
+                        possibility.push([this.y + 1, this.x ]);
+                    }
+                    if (map[this.y + 1][this.x - 1] == null && !this.firstStep) {
+                        possibility.push([this.y + 2, this.x ]);
+                    }
+                    if (map[this.y][this.x - 2] != null && this.color != map[this.y][this.x - 2]) {
+                        possibility.push([this.y + 1, this.x - 1]);
+                    }
+                    if (map[this.y][this.x] != null && this.color != map[this.y][this.x]) {
+                        possibility.push([this.y + 1, this.x + 1]);
+                    }
+                }
+                
+                return possibility;
             }
             document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
         }
@@ -98,46 +120,22 @@
             }
             this.obj_in_dom = obj;
             
-            this.getPossibility = function (map) {
-                var possibility = new Array();
-                if(map[this.y + 1][this.x-2] != null && map[this.y + 1][this.x - 2].color != this.color) {
-                    possibility.push([this.y + 1, this.x - 2]);
-                }
-                if(map[this.y + 1][this.x+2] != null && map[this.y + 1][this.x + 2].color != this.color) {
-                    possibility.push([this.y + 1, this.x + 2]);
-                }
-                if(map[this.y - 1][this.x-2] != null && map[this.y - 1][this.x - 2]) {
-                    possibility.push([this.x + 1, this.y - 2]);
-                }
-                if(map[this.y - 1][this.x+2] != null) {
-                    possibility.push([this.x + 1, this.y - 2]);
-                }
-                if(map[this.y + 2][this.x-1] != null) {
-                    possibility.push([this.x + 1, this.y - 2]);
-                }
-                if(map[this.y + 2][this.x+1] != null) {
-                    possibility.push([this.x + 1, this.y - 2]);
-                }
-                if(map[this.y - 2][this.x-1] != null) {
-                    possibility.push([this.x + 1, this.y - 2]);
-                }
-                if(map[this.y - 2][this.x+1] != null) {
-                    possibility.push([this.x + 1, this.y - 2]);
-                }
-                return possibility;
-            }
-            this.move_to = function (new_y, new_x) {
-                if (map[new_y - 1][new_x - 1] != null) {
-                    if (map[new_y - 1][new_x - 1].color == this.color) {
-                        return false;
+            this.getPossibility = function () {
+                let possibility = new Array();
+                let moves = [[this.y + 1,this.x - 2], [this.y + 1,this.x + 2], [this.y - 1,this.x - 2], [this.y - 1,this.x + 2], [this.y + 2,this.x - 1],
+                [this.y + 2,this.x + 1], [this.y - 2,this.x - 1] , [this.y - 2,this.x + 1]];
+                moves.forEach(move => {
+                    if(move[0] > 0 && move[0] <= 8 && move[1] > 0 && move[1] <= 8) {
+                        let block = map[move[0]-1][move[1]-1];
+                        if(block != null && block.color == this.color) {
+                            return;
+                        }
+                        possibility.push(move);
+                        
                     }
-                }
-                document.getElementById(this.y + "" + this.x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
-                this.y = new_y;
-                this.x = new_x;
-                return true;
+                });
+                
+                return possibility;
             }
             document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
         }
@@ -154,21 +152,41 @@
                 obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bb.png';
             }
             this.obj_in_dom = obj;
-            this.getPossibility = function (map) {
-
-            }
-            this.move_to = function (new_y, new_x) {
-                if (map[new_y - 1][new_x - 1] != null) {
-                    if (map[new_y - 1][new_x - 1].color == this.color) {
-                        return false;
-                    }
+            this.getPossibility = function () {
+                let possibility = new Array();
+                yi = this.y - 1;
+                xi = this.x - 1;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    yi--;
+                    xi--;
                 }
-                document.getElementById(this.y + "" + this.x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
-                this.y = new_y;
-                this.x = new_x;
-                return true;
+                yi = this.y + 1;
+                xi = this.x + 1;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    yi++;
+                    xi++;
+                }
+                yi = this.y + 1;
+                xi = this.x - 1;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    yi++;
+                    xi--;
+                }
+                yi = this.y - 1;
+                xi = this.x + 1;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    yi--;
+                    xi++;
+                }
+                return possibility;
             }
             document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
         }
@@ -184,21 +202,37 @@
                 obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/br.png';
             }
             this.obj_in_dom = obj;
-            this.getPossibility = function (map) {
-                
-            }
-            this.move_to = function (new_y, new_x) {
-                if (map[new_y - 1][new_x - 1] != null) {
-                    if (map[new_y - 1][new_x - 1].color == this.color) {
-                        return false;
-                    }
+            this.getPossibility = function () {
+                let possibility = new Array();
+                let yi = this.y - 1;
+                let xi = this.x;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    yi--;
                 }
-                document.getElementById(this.y + "" + this.x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
-                this.y = new_y;
-                this.x = new_x;
-                return true;
+                yi = this.y + 1;
+                xi = this.x;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    yi++;
+                }
+                yi = this.y;
+                xi = this.x - 1;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    xi--;
+                }
+                yi = this.y;
+                xi = this.x + 1;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    xi++;
+                }
+                return possibility;
             }
             document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
         }
@@ -215,35 +249,72 @@
                 obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bq.png';
             }
             this.obj_in_dom = obj;
+            document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
             this.getPossibility = function () {
                 let possibility = new Array();
                 let yi = this.y-1;
                 let xi = this.x;
                 while(yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi-1][xi-1] == null ) || (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color))) {
                     possibility.push([yi,xi]);
-                    console.log(yi+" "+xi);
+                    if (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color)  break;
                     yi--;
-                    console.log(yi+" "+xi);
-                    if (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color) {
-                        break;
-                    }
+                }
+                yi = this.y+1;
+                xi = this.x;
+                while(yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi-1][xi-1] == null ) || (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color))) {
+                    possibility.push([yi,xi]);
+                    if (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color)  break;
+                    yi++;
+                }
+                yi = this.y;
+                xi = this.x-1;
+                while(yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi-1][xi-1] == null ) || (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color))) {
+                    possibility.push([yi,xi]);
+                    if (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color)  break;
+                    xi--;
+                }
+                yi = this.y;
+                xi = this.x+1;
+                while(yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi-1][xi-1] == null ) || (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color))) {
+                    possibility.push([yi,xi]);
+                    if (map[yi-1][xi-1] != null && map[yi-1][xi-1].color != this.color)  break;
+                    xi++;
+                }
+                yi=this.y-1;
+                xi=this.x-1;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    yi--;
+                    xi--;
+                }
+                yi = this.y + 1;
+                xi = this.x + 1;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    yi++;
+                    xi++;
+                }
+                yi = this.y + 1;
+                xi = this.x - 1;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    yi++;
+                    xi--;
+                }
+                yi = this.y - 1;
+                xi = this.x + 1;
+                while (yi > 0 && yi <= 8 && xi > 0 && xi <= 8 && ((map[yi - 1][xi - 1] == null) || (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color))) {
+                    possibility.push([yi, xi]);
+                    if (map[yi - 1][xi - 1] != null && map[yi - 1][xi - 1].color != this.color) break;
+                    yi--;
+                    xi++;
                 }
                 return possibility;
             }
-            this.move_to = function (new_y, new_x) {
-                if (map[new_y - 1][new_x - 1] != null) {
-                    if (map[new_y - 1][new_x - 1].color == this.color) {
-                        return false;
-                    }
-                }
-                document.getElementById(this.y + "" + this.x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).innerHTML="";
-                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
-                this.y = new_y;
-                this.x = new_x;
-                return true;
-            }
-            document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
+            
         }
         function King(y,x, color) {
             this.name = "king";
@@ -258,25 +329,163 @@
                 obj.src = 'https://www.chess.com/chess-themes/pieces/neo/150/bk.png';
             }
             this.obj_in_dom = obj;
+            
             this.getPossibility = function () {
+                
                 let possibility = new Array();
-                return possibility;
-            }
-            this.move_to = function (new_y, new_x) {
-                if (map[new_y - 1][new_x - 1] != null) {
-                    if (map[new_y - 1][new_x - 1].color == this.color) {
-                        return false;
+                let moves = [[this.y-1, this.x], [this.y+1, this.x], [this.y, this.x-1], [this.y, this.x+1], [this.y-1, this.x-1], [this.y+1, this.x+1], [this.y-1, this.x+1], [this.y+1, this.x-1]];
+                moves.forEach(move => {
+                    if( move[0] > 0 && move[0] <= 8 && 0 < move[1] && move[1] <= 8 && (map[move[0]-1][move[1]-1] == null || this.color != map[move[0]-1][move[1]-1].color)) {
+                        possibility.push(move);
                     }
-                }
-                document.getElementById(this.y + "" + this.x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).innerHTML = "";
-                document.getElementById(new_y + "" + new_x).appendChild(this.obj_in_dom);
-                this.y = new_y;
-                this.x = new_x;
-                return true;
+                });
+                return possibility;
             }
             document.getElementById(this.y + "" + this.x).appendChild(this.obj_in_dom);
         }
+        function remove_from_list(list, piece) {
+            let i = 0;
+            while(i < list.length ) {
+                if(list[i].name == piece.name && list[i].x == piece.x && list[i].y == piece.y) { 
+                    console.log(list[i]);
+                    list.splice(i,1);
+
+                    break;
+                }
+                i++;
+            }
+        }
+        function can_u_move(selected, newY, newX) {
+            let old_y = selected.y;
+            let old_x = selected.x;
+            selected.y = newY;
+            selected.x = newX;
+            new_case_save = null;
+            map[old_y-1][old_x-1] = null;
+            new_case_save = map[newY - 1][newX - 1];
+            if(new_case_save != null) {
+                if(new_case_save.color == "white") {
+                    remove_from_list(white, new_case_save);
+                }
+                else {
+                    remove_from_list(black, new_case_save);
+                }
+            }
+
+            map[newY-1][newX-1] = selected;
+            if(selected.color == "white") {
+                if(check_check_of_white()) {
+                    selected.y = old_y;
+                    selected.x = old_x;
+                    map[old_y-1][old_x-1] = selected;
+                    map[newY - 1][newX - 1] = new_case_save;
+                    if (new_case_save != null) {
+                        if (new_case_save.color == "black") {
+                            black.push(new_case_save);
+                        }
+                        else {
+                            white.push(new_case_save);
+                        }
+                    }
+                    return false;
+                }
+            }
+            else {
+                if (check_check_of_black()) {
+                    selected.y = old_y;
+                    selected.x = old_x;
+                    map[old_y-1][old_x-1] = selected;
+                    map[newY - 1][newX - 1] = new_case_save;
+                    if (new_case_save != null) {
+                        if (new_case_save.color == "black") {
+                            black.push(new_case_save);
+                        }
+                        else {
+                            white.push(new_case_save);
+                        }
+                    }
+                    return false;
+                }
+            }
+            selected.y = old_y;
+            selected.x = old_x;
+            map[old_y-1][old_x-1] = selected;
+            map[newY-1][newX-1] = new_case_save;
+            if(new_case_save != null) {
+                if (new_case_save.color == "black") {
+                    black.push(new_case_save);
+                }
+                else {
+                    white.push(new_case_save);
+                }
+            }
+            
+            return true;
+        }
+        function move_to(new_y, new_x, selected) {
+            if (map[new_y - 1][new_x - 1] != null) {
+                if (map[new_y - 1][new_x - 1].color == selected.color) {
+                    return false;
+                }
+            }
+            
+            if(!can_u_move(selected, new_y, new_x)) {
+                return false;
+            }
+            
+            document.getElementById(selected.y + "" + selected.x).innerHTML = "";
+            document.getElementById(new_y + "" + new_x).innerHTML = "";
+            document.getElementById(new_y + "" + new_x).appendChild(selected.obj_in_dom);
+            selected.y = new_y;
+            selected.x = new_x;
+            if(selected.name == "Pion") {
+                if (!selected.firstStep) {
+                    selected.firstStep = true;
+                }
+            }
+            return true;
+        }
+        function get_black_possibility() {
+            var pos = new Array();
+            black.forEach(piece => {
+                pos = pos.concat(piece.getPossibility());
+            });
+            return pos;
+        }
+        function get_white_possibility() {
+            let pos = new Array();
+            white.forEach(piece => {
+                console.log(piece.name + " "+piece.getPossibility());
+                pos = pos.concat(piece.getPossibility());
+                console.log("POS : ");
+                console.log(pos);
+            });
+            return pos;
+        }
+        function check_check_of_black() {
+            console.log("Check of black");  
+            let possi = get_white_possibility();
+            console.log(king_black);
+            let find = false;
+            possi.forEach(one => {
+                console.log(one[0]+ " "+one[1] + " "+king_black.y+ " "+king_black.x);
+                if (one[0] === king_black.y && one[1] === king_black.x) {
+                    find = true;
+                }
+            });
+            return find;
+        }  
+        function check_check_of_white() {
+            let possi = get_black_possibility();
+            console.log(king_white);
+            let find = false;
+            possi.forEach(one => {
+                if(one[0] == king_white.y && one[1] == king_white.x) {
+                    find = true;
+                }
+            });
+            return find;
+        }  
         function build_board() {
             let board = document.getElementById("board");
             
@@ -294,53 +503,111 @@
             fill_board();
         }
         function fill_board() {
+            for (let k = 0; k < 8; k++) {
+                map[1][k] = new Pion(2, k + 1, "white");
+                white.push(map[1][k]);
+            }
+            for (let k = 0; k < 8; k++) {
+                map[6][k] = new Pion(7, k + 1, "black");
+                black.push(map[6][k]);
+            }
             
-            map[0][0] = new Tour(1,1,"white");
-            map[0][7] = new Tour(1,8,"white");
-            map[7][0] = new Tour(8,1,"black");
-            map[7][7] = new Tour(8,8,"black");
             
             map[0][1] = new Cavalier(1,2, "white" );
             map[0][6] = new Cavalier(1,7, "white" );
             map[7][1] = new Cavalier(8,2, "black" );
             map[7][6] = new Cavalier(8,7, "black" );
+            white.push(map[0][1]);
+            white.push(map[0][6]);
+            black.push(map[7][1]);
+            black.push(map[7][6]);
+
             map[0][2] = new Fou(1,3, "white" );
             map[0][5] = new Fou(1,6, "white" );
             map[7][2] = new Fou(8,3, "black" );
             map[7][5] = new Fou(8,6, "black" );
-            for(let k = 0; k < 8; k++) {
-                map[1][k] = new Pion(2,k+1, "white");
-            }
-            for(let k = 0; k < 8; k++) {
-                map[6][k] = new Pion(7,k+1, "black");
-            }
+            white.push(map[0][2]);
+            white.push(map[0][5]);
+            black.push(map[7][2]);
+            black.push(map[7][5]);
+
+            map[0][0] = new Tour(1, 1, "white");
+            map[0][7] = new Tour(1, 8, "white");
+            map[7][0] = new Tour(8, 1, "black");
+            map[7][7] = new Tour(8, 8, "black");
+            white.push(map[0][0]);
+            white.push(map[0][7]);
+            black.push(map[7][0]);
+            black.push(map[7][7]);
+
             map[0][4] = new Queen(1, 5, "white");
             map[7][4] = new Queen(8, 5, "black");
+            white.push(map[0][4]);
+            black.push(map[7][4]);
+
             map[0][3] = new King(1, 4, "white");
             map[7][3] = new King(8, 4, "black");
+            king_white = map[0][3];
+            king_black = map[7][3];
+            white.push(map[0][3]);
+            black.push(map[7][3]);
         }
         build_board();
 
+        
+        var possi = null;
         document.getElementById("board").addEventListener("click", (event) => {
             let y = parseInt(event.clientY / (board_ph.offsetHeight /8))+1;
             let x = parseInt(event.clientX / (board_ph.offsetWidth / 8)) + 1;
-            if( selected != null && selected.x == x && selected.y == y && select_bool == true) {
+            
+            if (possi != null) {
+                possi.forEach(one => {
+                    console.log("Lost");
+                    document.getElementById("" + one[0] + "" + one[1]).classList.remove("blue");
+                });
+                possi = null;
+            }
+            if( selected != null && map[y - 1][x - 1] != null && (( selected.x == x && selected.y == y) || selected.color == map[y - 1][x - 1].color) && select_bool == true) {
                 select_bool = false;
                 document.getElementById("" + y + "" + x).style.opacity = "1";
-                
                 return;
             }
             console.log(y + " "+x);
+            console.log(selected);
             if(select_bool == true) {
                 console.log(selected.name);
                 let old_x = selected.x;
                 let old_y = selected.y;
-                if(selected.move_to(y,x) == true)  {
-                    
+                possi = selected.getPossibility();
+                let find = false;
+                possi.forEach(one => {
+                    if(y == one[0] && x == one[1]) {
+                        find = true;
+                    }
+                });
+                if(find == true && move_to(y,x, selected) == true)  {
+                    if(selected.color == "black") {
+                        if(check_check_of_white() == true) {
+                            console.log("CHECK");
+                        }
+                    }
+                    else {
+                        if(check_check_of_black()) {
+                            console.log("CHECK");
+                        }
+                    }
                     document.getElementById("" + old_y + "" + old_x).style.opacity = "1";
                     map[selected.y - 1][selected.x - 1] = selected;
                     map[old_y - 1][old_x - 1] = null;
                     select_bool = false;
+
+                    if (possi != null) {
+                        possi.forEach(one => {
+                            console.log("Lost");
+                            document.getElementById("" + one[0] + "" + one[1]).classList.remove("blue");
+                        });
+                        possi = null;
+                    }
                 }
             }
             else {
@@ -349,9 +616,9 @@
                     select_bool = true;
                     document.getElementById(""+y+""+x).style.opacity = "0.9";
                     console.log(selected.name);
-                    let possi = selected.getPossibility();
+                    possi = selected.getPossibility();
                     possi.forEach(one => {
-                        document.getElementById(""+one[0]+""+one[1]).style.backgroundColor = "blue";
+                        document.getElementById(""+one[0]+""+one[1]).classList.add("blue");
                     });
                 }
             }

@@ -7,9 +7,9 @@ use axum::{
 use std::net::SocketAddr;
 #[tokio::main]
 async fn main() {
-
-    let app = Router::new().route("/ws", get(handler));
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let room = Vec<Vec<WebSocket>>::new();
+    let app = Router::new().route("/websocketChess/", get(handler));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 8082));
     
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -28,7 +28,7 @@ async fn main() {
                 // client disconnected
                 return;
             };
-
+            println!("{:?}", msg);
             if socket.send(msg).await.is_err() {
                 // client disconnected
                 return;

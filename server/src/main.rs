@@ -5,15 +5,16 @@ use axum::{
     response::{ /*Html,*/ Response},
     Router,
 };
-use std::net::SocketAddr;
+use std::{net::SocketAddr};
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync:: { RwLock, broadcast };
 //use serde::Deserialize;
+#[allow(dead_code)]
 struct ChessGame {
     room_name: String,
     map : [[i32;8];8],
-    //connected : Arc<Vec<WebSocket>>,
+    tx: broadcast::Sender<String>,
 }
 
 #[tokio::main]
@@ -38,9 +39,10 @@ async fn main() {
         let r1 = lock_room.read().await;
         let exist = (*r1).contains_key(&room_name.clone());
         drop(r1);
-        if exist {
+        if !exist {
             let mut  w1 = lock_room.write().await;
-            let chess = ChessGame { room_name : room_name.clone(), map : [[0;8];8]};
+            let (tx, _rx) = broadcast::channel(100);
+            let chess = ChessGame { room_name : room_name.clone(), map : [[0;8];8], tx};
             (*w1).insert(room_name.clone(), chess);
         }
         

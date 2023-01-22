@@ -1,10 +1,11 @@
 use axum::{
-    extract::ws::{WebSocketUpgrade, WebSocket},
+    extract::ws::{Message, WebSocketUpgrade, WebSocket},
     extract::State,
     routing::get,
     response::{ /*Html,*/ Response},
     Router,
 };
+use futures::{ sink::SinkExt, stream::StreamExt };
 use std::{net::SocketAddr};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -35,7 +36,7 @@ async fn main() {
     async fn handler(axum::extract::Path(id):axum::extract::Path<String> , ws: WebSocketUpgrade , State(state): State<Arc<RwLock<BTreeMap::<String, ChessGame>>>> ) -> Response {
         ws.on_upgrade(|socket| handle_socket(socket, state, id))
     }
-    async fn handle_socket(mut socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, room_name : String) {
+    async fn handle_socket( socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, room_name : String) {
         let r1 = lock_room.read().await;
         let exist = (*r1).contains_key(&room_name.clone());
         drop(r1);
@@ -45,20 +46,32 @@ async fn main() {
             let chess = ChessGame { room_name : room_name.clone(), map : [[0;8];8], tx};
             (*w1).insert(room_name.clone(), chess);
         }
-        
-        while let Some(msg) = socket.recv().await {
-            let msg = if let Ok(msg) = msg {
-                msg
-            } else {
-                // client disconnected
-                return;
-            };
-            println!("{:?}", msg);
-            if socket.send(msg).await.is_err() {
-                // client disconnected
-                return;
+        let r1 = lock_room.read().await;
+        let chess  = (*r1).get(&room_name).unwrap();
+        let mut rx = chess.tx.subscribe();
+        let (mut sender , mut receiver) = socket.split();
+
+        let mut send_task = tokio::spawn(async move {
+            while let Ok(msg) = rx.recv().await {
+                // In any websocket error, break loop.
+                if sender.send(Message::Text(msg)).await.is_err() {
+                    break;
+                }
             }
-        }
+        });
+        let tx = chess.tx.clone();
+        let mut recv_task = tokio::spawn(async move {
+            while let Some(Ok(Message::Text(text))) = receiver.next().await {
+                // Add username before message.
+                let _ = tx.send(format!("{}: {}", "name", text));
+            }
+        });
+
+        // If any one of the tasks run to completion, we abort the other.
+        tokio::select! {
+            _ = (&mut send_task) => recv_task.abort(),
+            _ = (&mut recv_task) => send_task.abort(),
+        };
     }
     pub async fn fallback( uri: axum::http::Uri) -> impl axum::response::IntoResponse {
         println!("FALLBACK");

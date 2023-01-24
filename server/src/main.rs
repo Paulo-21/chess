@@ -5,15 +5,16 @@ use axum::{
     response::{ /*Html,*/ Response},
     Router,
 };
-use futures::{ sink::SinkExt, stream::StreamExt, lock };
+use futures::{ sink::SinkExt, stream::StreamExt };
 use std::{ net::SocketAddr };
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use tokio::sync:: { RwLock, broadcast };
+use tokio::sync:: { RwLock, broadcast, oneshot::{self, Receiver, Sender} };
 //use serde::Deserialize;
 use serde::{Deserialize, Serialize};
 use serde_json::{ Result, Value };
 use std::ops::Bound::Included;
+use rand::Rng;
 //use serde::Serialize;
 #[allow(dead_code)]
 struct ChessGame {
@@ -25,10 +26,10 @@ struct ChessGame {
 struct User {
     user_name : String,
 }
-#[derive(Clone)]
 struct Player {
     name : String,
     elo : i16,
+    //tx : Sender<String>,
 }
 #[derive(Serialize, Deserialize)]
 struct ChessMessage {
@@ -72,9 +73,12 @@ async fn main() {
         ws.on_upgrade(|socket| handle_socket(socket, state, id, user_name))
     }
     async fn handler_matchmaking( Query(user_name): Query<User>,  ws: WebSocketUpgrade , State(state): State<Arc<Couille>> ) -> Response {
+        let (tx, rx) = oneshot::channel();
+
         let player = Player {
             name : user_name.user_name,
             elo : 1000,
+            //tx : Arc::new(tx),
         };
         ws.on_upgrade(|socket| handle_socket_matchmaking(socket, state, player))
     }
@@ -89,7 +93,7 @@ async fn main() {
         if !exist {
             let mut  w1 = lock_room.write().await;
             let (tx, _rx) = broadcast::channel(100);
-            let chess = ChessGame { room_name : room_name.clone(), map : [[0;8];8], tx};
+            let chess = ChessGame { room_name : room_name.clone(), map : [[0;8];8], tx };
             (*w1).insert(room_name.clone(), chess);
         }
         let r1 = lock_room.read().await;
@@ -139,20 +143,19 @@ async fn main() {
         else {
             drop(r1);
             let mut w1 = couille.b.write().await;
-            
             let v = Vec::from([user]);
             (*w1).insert(user_elo, v);
             drop(w1);
         }
 
-        let mut w2 = couille.b.read().await;
-        let mut selected:Vec<(i16, Player)> = Vec::new();
+        let mut w2 = couille.b.write().await;
+        let mut selected:Vec<i16> = Vec::new();
         let mut key_selected = 0;
         let mut delta = i16::MAX;
         for (&key, value) in (*w2).range((Included(&(user_elo-100)), Included(&(user_elo+100)))) {
-            for x in value {
-                selected.push((key.clone(), x.clone()));
-            }
+            /*for x in value {
+                selected.push(key.clone());
+            }*/
             let d:i16 = user_elo - key;
             let temp_delta = d.abs();
             if temp_delta < delta  {
@@ -160,6 +163,31 @@ async fn main() {
                 key_selected = key;
             }
         }
+        if key_selected != 0 {
+            let sel = (*w2).get_mut(&key_selected).unwrap();
+            let a = sel.pop().unwrap();
+            drop(w2);
+            let mut rng = rand::thread_rng();
+            let random = rng.gen::<i64>();
+            let room_name_f = format!("{:x}", random);
+            let mut w1 = couille.c.write().await;
+            if !(*w1).contains_key(&room_name_f) {
+                let (tx, _rx) = broadcast::channel(2);
+                let a = ChessGame { room_name : room_name_f.clone(), map : [[0;8];8], tx};
+                (*w1).insert(room_name_f.clone(), a);
+            }
+            if (a).tx.send(room_name_f).is_err() {
+                println!("Erreur lors de l'envoie de la room");
+            }
+        
+        }
+        else {
+            if (*w2).contains_key(&user_elo) {
+
+            }
+            let a = (*w2).get_mut(&user_elo).unwrap();
+        }
+        
     }
     async fn handle_socket_friend( socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, user : User ) {
         

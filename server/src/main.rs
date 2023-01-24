@@ -38,8 +38,8 @@ struct ChessMessage {
     message : String,
 }
 struct Couille {
-    c : Arc<RwLock<BTreeMap::<String, ChessGame>>>,
-    b : Arc<RwLock<BTreeMap::<i16, Vec<Player>>>>,
+    lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>,
+    lock_queue : Arc<RwLock<BTreeMap::<i16, Vec<Player>>>>,
 }
 
 #[tokio::main]
@@ -52,8 +52,8 @@ async fn main() {
     let lock_queue = Arc::new(RwLock::new(queue));
 
     let couille = Couille {
-        c  : room.clone(),
-        b : lock_queue.clone(),
+        lock_room  : room.clone(),
+        lock_queue : lock_queue.clone(),
     };
     let cou = Arc::new(couille);
     let app = Router::new()
@@ -69,11 +69,12 @@ async fn main() {
         .await
         .unwrap();
 
-    async fn handler_game(axum::extract::Path(id):axum::extract::Path<String> , Query(user_name): Query<User>,  ws: WebSocketUpgrade , State(state): State<Arc<RwLock<BTreeMap::<String, ChessGame>>>> ) -> Response {
-        ws.on_upgrade(|socket| handle_socket(socket, state, id, user_name))
+    async fn handler_game(axum::extract::Path(room_name):axum::extract::Path<String> , Query(user_name): Query<User>,  ws: WebSocketUpgrade , State(state): State<Arc<RwLock<BTreeMap::<String, ChessGame>>>> ) -> Response {
+        println!("NEW on GAME");
+        ws.on_upgrade(|socket| handle_socket_game(socket, state, room_name, user_name))
     }
     async fn handler_matchmaking( Query(user_name): Query<User>,  ws: WebSocketUpgrade , State(state): State<Arc<Couille>> ) -> Response {
-        let (tx, rx) = oneshot::channel();
+        //let (tx, rx) = oneshot::channel::<String>();
 
         let player = Player {
             name : user_name.user_name,
@@ -83,10 +84,10 @@ async fn main() {
         ws.on_upgrade(|socket| handle_socket_matchmaking(socket, state, player))
     }
     async fn handler_friend( Query(user_name): Query<User>,  ws: WebSocketUpgrade , State(state): State<Arc<RwLock<BTreeMap::<String, ChessGame>>>> ) -> Response {
+        println!("New On friend");
         ws.on_upgrade(|socket| handle_socket_friend(socket, state, user_name))
     }
-    async fn handle_socket( socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, room_name : String, user : User ) {
-        println!("NEW ");
+    async fn handle_socket_game( socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, room_name : String, user : User ) {
         let r1 = lock_room.read().await;
         let exist = (*r1).contains_key(&room_name.clone());
         drop(r1);
@@ -104,7 +105,7 @@ async fn main() {
         let mut send_task = tokio::spawn(async move {
             while let Ok(msg) = rx.recv().await {
                 // In any websocket error, break loop.
-
+                
                 if sender.send(Message::Text(msg)).await.is_err() {
                     break;
                 }
@@ -131,25 +132,25 @@ async fn main() {
 
     async fn handle_socket_matchmaking( socket: WebSocket, couille : Arc<Couille>, user : Player ) {
         let user_elo = user.elo;
-        let r1 = couille.b.read().await;
+        let r1 = couille.lock_queue.read().await;
         if (*r1).contains_key(&user.elo) {
 
             drop(r1);
-            let mut w1 = couille.b.write().await;
+            let mut w1 = couille.lock_queue.write().await;
             let v = (*w1).get_mut(&user.elo).unwrap();
             v.push(user);
             drop(w1);
         }
         else {
             drop(r1);
-            let mut w1 = couille.b.write().await;
+            let mut w1 = couille.lock_queue.write().await;
             let v = Vec::from([user]);
             (*w1).insert(user_elo, v);
             drop(w1);
         }
 
-        let mut w2 = couille.b.write().await;
-        let mut selected:Vec<i16> = Vec::new();
+        let mut w2 = couille.lock_queue.write().await;
+        //let mut selected:Vec<i16> = Vec::new();
         let mut key_selected = 0;
         let mut delta = i16::MAX;
         for (&key, value) in (*w2).range((Included(&(user_elo-100)), Included(&(user_elo+100)))) {
@@ -167,18 +168,21 @@ async fn main() {
             let sel = (*w2).get_mut(&key_selected).unwrap();
             let a = sel.pop().unwrap();
             drop(w2);
-            let mut rng = rand::thread_rng();
-            let random = rng.gen::<i64>();
+            /*let random = {
+                let mut rng = rand::thread_rng();
+                rng.gen::<i64>()
+            };*/
+            let random = rand::random::<i64>();
             let room_name_f = format!("{:x}", random);
-            let mut w1 = couille.c.write().await;
+            let mut w1 = couille.lock_room.write().await;
             if !(*w1).contains_key(&room_name_f) {
                 let (tx, _rx) = broadcast::channel(2);
                 let a = ChessGame { room_name : room_name_f.clone(), map : [[0;8];8], tx};
                 (*w1).insert(room_name_f.clone(), a);
             }
-            if (a).tx.send(room_name_f).is_err() {
+            /*if (a).tx.send(room_name_f).is_err() {
                 println!("Erreur lors de l'envoie de la room");
-            }
+            }*/
         
         }
         else {
@@ -189,8 +193,20 @@ async fn main() {
         }
         
     }
-    async fn handle_socket_friend( socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, user : User ) {
-        
+    async fn handle_socket_friend( mut socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, user : User ) {
+        let mut w1 = lock_room.write().await;
+        let room_name = format!("{:x}", rand::random::<i64>());
+        if !(*w1).contains_key(&room_name) {
+            let (tx, _rx) = broadcast::channel(10);
+            let room = ChessGame {
+                room_name : room_name.clone(),
+                map : [[0;8];8],
+                tx,
+            };
+            (*w1).insert(room_name.clone(), room);
+            drop(w1);
+            socket.send(Message::Text(room_name)).await;
+        }
     }
     pub async fn fallback( uri: axum::http::Uri) -> impl axum::response::IntoResponse {
         println!("FALLBACK");

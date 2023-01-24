@@ -14,9 +14,10 @@ use tokio::sync:: { RwLock, broadcast, oneshot::{self, Receiver, Sender} };
 use serde::{Deserialize, Serialize};
 use serde_json::{ Result, Value };
 use std::ops::Bound::Included;
-use rand::Rng;
+//use rand::Rng;
 //use serde::Serialize;
 #[allow(dead_code)]
+#[derive(Clone)]
 struct ChessGame {
     room_name: String,
     map : [[i32;8];8],
@@ -90,22 +91,21 @@ async fn main() {
     async fn handle_socket_game( socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, room_name : String, user : User ) {
         let r1 = lock_room.read().await;
         let exist = (*r1).contains_key(&room_name.clone());
-        drop(r1);
+        
         if !exist {
-            let mut  w1 = lock_room.write().await;
-            let (tx, _rx) = broadcast::channel(100);
-            let chess = ChessGame { room_name : room_name.clone(), map : [[0;8];8], tx };
-            (*w1).insert(room_name.clone(), chess);
+            drop(r1);
+            return;
         }
-        let r1 = lock_room.read().await;
-        let chess  = (*r1).get(&room_name).unwrap();
+        //let r1 = lock_room.read().await;
+        let chess_temp  =  (*r1).get(&room_name).unwrap();
+        let chess = chess_temp.clone();
+        drop(r1);
         let mut rx = chess.tx.subscribe();
         let (mut sender , mut receiver) = socket.split();
         let user1 = user.clone();
         let mut send_task = tokio::spawn(async move {
             while let Ok(msg) = rx.recv().await {
                 // In any websocket error, break loop.
-                
                 if sender.send(Message::Text(msg)).await.is_err() {
                     break;
                 }
@@ -115,9 +115,11 @@ async fn main() {
         let mut recv_task = tokio::spawn(async move {
             while let Some(Ok(Message::Text(text))) = receiver.next().await {
                 println!("Message : {}", text);
+                //let z = serde_json::from_str(&text);
                 let m = ChessMessage { room_name : room_name.clone(), sender : user1.user_name.clone(), message : String::from("Bonjour")};
                 if let Ok(m) = serde_json::to_string(&m) {
-                    let _ = tx.send(m);
+                    
+                    //let _ = tx.send(m);
                 }
                 //let _ = tx.send(format!("{}: {}", "Message : ", text));
             }

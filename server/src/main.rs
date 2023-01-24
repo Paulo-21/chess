@@ -149,17 +149,17 @@ async fn main() {
         let mut selected:Vec<(i16, Player)> = Vec::new();
         let mut key_selected = 0;
         let mut delta = i16::MAX;
-        for (&key, &value) in (*w2).range((Included(&(user_elo-100)), Included(&(user_elo+100)))) {
+        for (&key, value) in (*w2).range((Included(&(user_elo-100)), Included(&(user_elo+100)))) {
             for x in value {
                 selected.push((key.clone(), x.clone()));
             }
-        let d:i16 = user_elo - key;
-        let temp_delta = d.abs();
-        if temp_delta < delta  {
-            delta = temp_delta;
-            key_selected = key;
+            let d:i16 = user_elo - key;
+            let temp_delta = d.abs();
+            if temp_delta < delta  {
+                delta = temp_delta;
+                key_selected = key;
+            }
         }
-    }
     }
     async fn handle_socket_friend( socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, user : User ) {
         

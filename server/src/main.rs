@@ -22,6 +22,9 @@ struct ChessGame {
     room_name: String,
     map : [[i32;8];8],
     tx: broadcast::Sender<String>,
+    white : String,
+    black : String,
+    to_play : bool,
 }
 #[derive(Deserialize, Clone)]
 struct User {
@@ -118,7 +121,6 @@ async fn main() {
                 //let z = serde_json::from_str(&text);
                 let m = ChessMessage { room_name : room_name.clone(), sender : user1.user_name.clone(), message : String::from("Bonjour")};
                 if let Ok(m) = serde_json::to_string(&m) {
-                    
                     //let _ = tx.send(m);
                 }
                 //let _ = tx.send(format!("{}: {}", "Message : ", text));
@@ -198,12 +200,14 @@ async fn main() {
     async fn handle_socket_friend( mut socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, user : User ) {
         let mut w1 = lock_room.write().await;
         let room_name = format!("{:x}", rand::random::<i64>());
+        
         if !(*w1).contains_key(&room_name) {
             let (tx, _rx) = broadcast::channel(10);
             let room = ChessGame {
                 room_name : room_name.clone(),
                 map : [[0;8];8],
                 tx,
+                
             };
             (*w1).insert(room_name.clone(), room);
             drop(w1);

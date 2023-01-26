@@ -507,7 +507,7 @@
             console.log(king_black);
             let find = false;
             possi.forEach(one => {
-                console.log(one[0]+ " "+one[1] + " "+king_black.y+ " "+king_black.x);
+                //console.log(one[0]+ " "+one[1] + " "+king_black.y+ " "+king_black.x);
                 if (one[0] == king_black.y && one[1] == king_black.x) {
                     find = true;
                 }
@@ -530,9 +530,9 @@
             let possi_white = get_white_possibility();
             
             let possi_black = get_black_possibility();
-            black.forEach(piece => {
+            /*black.forEach(piece => {
                 possi_black.push([piece.y, piece.x, piece]);
-            });
+            });*/
             console.log("POSSI WHITE : ");
             console.log(possi_white);
             console.log("POSSI BLACK : ");
@@ -545,7 +545,15 @@
                     }
                 });
             });
-            inter_move.push(king_white.getPossibility());
+            let a = king_white.getPossibility();
+            a.forEach(move => {
+                inter.push([a[0], a[1], king_white]);
+            })
+            console.log("MOVESSSS : ");
+            console.log(inter);
+            //inter.push(king_white.getPossibility());
+            console.log(king_white.getPossibility());
+
             let is_mate = true;
             inter.forEach(inter_move => {
                 console.log(inter_move);
@@ -598,7 +606,7 @@
                         }
                     });
                 });
-                inter_move.push(king_black.getPossibility());
+                //inter.push(king_black.getPossibility());
                 let is_mate = true;
                 inter.forEach(inter_move => {
                     console.log(inter_move);

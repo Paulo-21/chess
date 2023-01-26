@@ -6,6 +6,7 @@ use axum::{
     Router,
 };
 use futures::{ sink::SinkExt, stream::StreamExt };
+//use rand::random;
 use std::{ net::SocketAddr };
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -16,15 +17,18 @@ use serde_json::{ Result, Value };
 use std::ops::Bound::Included;
 //use rand::Rng;
 //use serde::Serialize;
+mod chess;
+use chess:: { Piece,Pion, Cavalier, Fou, Tour, Dame, Roi };
 #[allow(dead_code)]
 #[derive(Clone)]
 struct ChessGame {
     room_name: String,
     map : [[i32;8];8],
     tx: broadcast::Sender<String>,
-    white : String,
-    black : String,
-    to_play : bool,
+    white : Option<String>,
+    black : Option<String>,
+    white_to_play : bool,
+    //pieces : [chess::Piece;32],
 }
 #[derive(Deserialize, Clone)]
 struct User {
@@ -70,8 +74,7 @@ async fn main() {
     
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
-        .await
-        .unwrap();
+        .await.unwrap();
 
     async fn handler_game(axum::extract::Path(room_name):axum::extract::Path<String> , Query(user_name): Query<User>,  ws: WebSocketUpgrade , State(state): State<Arc<RwLock<BTreeMap::<String, ChessGame>>>> ) -> Response {
         println!("NEW on GAME");
@@ -95,17 +98,15 @@ async fn main() {
         let r1 = lock_room.read().await;
         let exist = (*r1).contains_key(&room_name.clone());
         
-        if !exist {
+        if !exist { //Finish connection if the room didn't exist
             drop(r1);
             return;
         }
-        //let r1 = lock_room.read().await;
         let chess_temp  =  (*r1).get(&room_name).unwrap();
         let chess = chess_temp.clone();
         drop(r1);
         let mut rx = chess.tx.subscribe();
         let (mut sender , mut receiver) = socket.split();
-        let user1 = user.clone();
         let mut send_task = tokio::spawn(async move {
             while let Ok(msg) = rx.recv().await {
                 // In any websocket error, break loop.
@@ -114,6 +115,7 @@ async fn main() {
                 }
             }
         });
+        let user1 = user.clone();
         let tx = chess.tx.clone();
         let mut recv_task = tokio::spawn(async move {
             while let Some(Ok(Message::Text(text))) = receiver.next().await {
@@ -121,7 +123,7 @@ async fn main() {
                 //let z = serde_json::from_str(&text);
                 let m = ChessMessage { room_name : room_name.clone(), sender : user1.user_name.clone(), message : String::from("Bonjour")};
                 if let Ok(m) = serde_json::to_string(&m) {
-                    //let _ = tx.send(m);
+                    let _ = tx.send(m);
                 }
                 //let _ = tx.send(format!("{}: {}", "Message : ", text));
             }
@@ -135,7 +137,7 @@ async fn main() {
     }
 
     async fn handle_socket_matchmaking( socket: WebSocket, couille : Arc<Couille>, user : Player ) {
-        let user_elo = user.elo;
+        /*let user_elo = user.elo;
         let r1 = couille.lock_queue.read().await;
         if (*r1).contains_key(&user.elo) {
 
@@ -147,10 +149,10 @@ async fn main() {
         }
         else {
             drop(r1);
-            let mut w1 = couille.lock_queue.write().await;
+            /*let mut w1 = couille.lock_queue.write().await;
             let v = Vec::from([user]);
             (*w1).insert(user_elo, v);
-            drop(w1);
+            drop(w1);*/
         }
 
         let mut w2 = couille.lock_queue.write().await;
@@ -180,42 +182,58 @@ async fn main() {
             let room_name_f = format!("{:x}", random);
             let mut w1 = couille.lock_room.write().await;
             if !(*w1).contains_key(&room_name_f) {
-                let (tx, _rx) = broadcast::channel(2);
-                let a = ChessGame { room_name : room_name_f.clone(), map : [[0;8];8], tx};
-                (*w1).insert(room_name_f.clone(), a);
+                
+                let room = create_ChessGame(&room_name_f, Some(user.name.clone()), None);
+                (*w1).insert(room_name_f.clone(), room);
             }
             /*if (a).tx.send(room_name_f).is_err() {
                 println!("Erreur lors de l'envoie de la room");
             }*/
-        
         }
         else {
             if (*w2).contains_key(&user_elo) {
 
             }
             let a = (*w2).get_mut(&user_elo).unwrap();
-        }
-        
+        }*/
     }
     async fn handle_socket_friend( mut socket: WebSocket, lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>, user : User ) {
         let mut w1 = lock_room.write().await;
         let room_name = format!("{:x}", rand::random::<i64>());
         
         if !(*w1).contains_key(&room_name) {
-            let (tx, _rx) = broadcast::channel(10);
-            let room = ChessGame {
-                room_name : room_name.clone(),
-                map : [[0;8];8],
-                tx,
-                
-            };
+            
+            let room = create_chess_game(&room_name, Some(user.user_name), None);
             (*w1).insert(room_name.clone(), room);
             drop(w1);
-            socket.send(Message::Text(room_name)).await;
+            if socket.send(Message::Text(room_name)).await.is_err() {
+                println!("Error lors de l'envoie du message");
+            };
         }
     }
     pub async fn fallback( uri: axum::http::Uri) -> impl axum::response::IntoResponse {
         println!("FALLBACK");
         (axum::http::StatusCode::NOT_FOUND, format!("No route {}", uri))
+    }
+
+    fn create_chess_game(room_name : &String, user_name1:Option<String>, user_name2:Option<String>) -> ChessGame{
+        let (tx, _rx) = broadcast::channel(10);
+        let f = rand::random::<bool>();
+        /*let c1 = Cavalier {
+            x : 0,
+            y : 0,
+
+        };*/
+        let mut room = ChessGame {
+            room_name : room_name.clone(),
+            map : [[0;8];8], tx,
+            white_to_play : true,
+            black : None,
+            white : None,
+            //piece : [chess::Piece::Cavalier(());32],
+        };
+        if !(f^true) { room.white = user_name1; room.black = user_name2; } 
+        else { room.white = user_name2; room.black = user_name1; }
+        room
     }
 }

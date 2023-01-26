@@ -1,0 +1,59 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    grid-auto-rows: 1fr;
+    grid-auto-columns: 1fr;
+    height: min(100vh, 100vw);
+    width: min(100vh, 100vw);
+}
+
+.black {
+    background-color: green;
+}
+
+.white {
+    background-color: greenyellow;
+}
+
+img {
+    max-width: 100%;
+    max-height: 100%;
+    display: inherit;
+}
+
+.cases {
+    display: inline;
+}
+
+.blue {
+    background-color: wheat;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    width: 100vw;
+    height: 100vh;
+}
+
+.info {
+    background-color: darkslategray;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+#modal {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 30vh;
+    background-color: aquamarine;
+}

@@ -222,7 +222,6 @@ async fn main() {
         /*let c1 = Cavalier {
             x : 0,
             y : 0,
-
         };*/
         let mut room = ChessGame {
             room_name : room_name.clone(),

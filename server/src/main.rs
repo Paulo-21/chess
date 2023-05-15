@@ -46,8 +46,8 @@ struct ChessMessage {
     message : String,
 }
 struct Couille {
-    lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>,
-    lock_queue : Arc<RwLock<BTreeMap::<i16, Vec<Player>>>>,
+    _lock_room : Arc<RwLock<BTreeMap::<String, ChessGame>>>,
+    _lock_queue : Arc<RwLock<BTreeMap::<i16, Vec<Player>>>>,
 }
 
 #[tokio::main]
@@ -60,8 +60,8 @@ async fn main() {
     let lock_queue = Arc::new(RwLock::new(queue));
 
     let couille = Couille {
-        lock_room  : room.clone(),
-        lock_queue : lock_queue.clone(),
+        _lock_room  : room.clone(),
+        _lock_queue : lock_queue.clone(),
     };
     let cou = Arc::new(couille);
     let app = Router::new()
@@ -136,7 +136,7 @@ async fn main() {
         };
     }
 
-    async fn handle_socket_matchmaking( socket: WebSocket, couille : Arc<Couille>, user : Player ) {
+    async fn handle_socket_matchmaking( _socket: WebSocket, _couille : Arc<Couille>, _user : Player ) {
         /*let user_elo = user.elo;
         let r1 = couille.lock_queue.read().await;
         if (*r1).contains_key(&user.elo) {

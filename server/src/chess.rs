@@ -40,32 +40,32 @@ pub struct Roi {
     already_move : bool,
 }
 impl Pion {
-    fn getPossibility() {
+    fn get_possibility() {
 
     }
 }
 impl Cavalier {
-    fn getPossibility() {
+    fn get_possibility() {
 
     }
 }
 impl Fou {
-    fn getPossibility() {
+    fn get_possibility() {
 
     }
 }
 impl Tour {
-    fn getPossibility() {
+    fn get_possibility() {
 
     }
 }
 impl Dame {
-    fn getPossibility() {
+    fn get_possibility() {
 
     }
 }
 impl Roi {
-    fn getPossibility() {
+    fn get_possibility() {
 
     }
 }

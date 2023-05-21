@@ -1,2 +1,2 @@
 # Chess
-un truc
+Plateforme d'échec en ligne
